@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="Apollo-legacy.ico">
+    <style>
+        body {
+            font-family: 'Trebuchet MS', sans-serif;
+            text-align: center;
+            background-image: url('space-background.webp');
+            background-size: cover;
+            background-attachment: fixed;
+            color: white;
+        }
+        #score {
+            font-size: 24px;
+            
+            margin-top: 20px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        #responseTimes, #averageTime {
+            margin-top: 20px;
+            font-size: 20px;
+            color: white;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: rgba(0, 51, 102, 0.8);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        button:hover {
+            background-color: rgba(0, 102, 204, 0.8);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <h1><b>Game Over!</b></h1>
+    <div id="score"></div>
+    <div id="responseTimes"></div>
+    <div id="averageTime"></div>
+    <button onclick="restartGame()">Restart Game</button>
+
+    <script>
+        // Extract score and response times from URL query parameters
+        var urlParams = new URLSearchParams(window.location.search);
+        var score = urlParams.get('score');
+        var times = urlParams.get('times');
+
+        document.getElementById("score").textContent = "Your Final Score: " + score;
+
+        if (times) {
+            var responseTimeArray = times.split(',').map(Number); // Convert to numbers
+            var responseTimesHtml = "<h2>Response Times:</h2>";
+            responseTimeArray.forEach(function(time, index) {
+                responseTimesHtml += "Attempt " + (index + 1) + ": " + time + "ms<br>";
+            });
+            document.getElementById("responseTimes").innerHTML = responseTimesHtml;
+        }
+
+        // Calculate and display average response time from localStorage
+        var totalResponseTime = responseTimeArray.reduce((total, time) => total + time, 0);
+        var nonZeroResponses = responseTimeArray.filter(time => time > 0).length;
+        var averageTime = nonZeroResponses > 0 ? Math.floor(totalResponseTime / nonZeroResponses) : 0;  // Set to 0 if no valid responses
+        document.getElementById("averageTime").textContent = "Average Response Time: " + averageTime + "ms";
+
+        // Function to restart the game
+        function restartGame() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

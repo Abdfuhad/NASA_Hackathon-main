@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="Apollo-legacy.ico">
+    <title>Gravity Mind Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-image: url('space-background.webp');
+            background-size: cover;
+            color: white;
+        }
+        #buttons {
+            margin-top: 30px;
+        }
+        #score {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #countdown {
+            font-size: 24px;
+            margin-top: 20px;
+            color: #ffcc00;
+        }
+        /* Timer progress bar */
+        #progressContainer {
+            width: 100%;
+            background-color: rgba(249, 198, 198, 0.156);
+            height: 20px;
+            margin-top: 20px;
+        }
+        #progressBar {
+            height: 20px;
+            width: 100%;
+            background-color: rgb(157, 228, 246);
+            transition: width 0s linear;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            background-color: rgba(0, 51, 102, 0.8);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        button:hover {
+            background-color: rgba(0, 102, 204, 0.8);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+<h1>Gravity Mind Game</h1>
+<h2>Rules</h2>
+<p>
+    1. Select the expression with greater value.
+</p>
+<p>
+    2. Use up and down arrow keys to select the expression or click on the expression.
+</p>
+<p>
+    3. Be quick, there is not much time!
+</p>
+
+<div id="countdown">Starting in: 3</div>
+
+<div id="buttons" style="display:none;"> <br><br><br><br>
+    <button id="button1">Button 1</button>
+    <br><br><br>
+    <button id="button2">Button 2</button>
+</div>
+
+<div id="score"></div>
+
+<!-- Progress Bar -->
+<div id="progressContainer" style="display:none;">
+    <div id="progressBar"></div>
+</div>
+
+<script>
+var button1 = document.getElementById("button1");
+var button2 = document.getElementById("button2");
+var score = document.getElementById("score");
+var countdown = document.getElementById("countdown");
+var progressBar = document.getElementById("progressBar");
+var progressContainer = document.getElementById("progressContainer");
+
+var timeLimit = 1500; // 1.5 seconds in milliseconds
+var currentScore = 0;
+var startTime, timerId, progressIntervalId;
+var responseTimeArray = [];
+var userInteracted = false;  // Track if the user interacts (click or key press)
+
+
+function generateRandomArithmeticExpression() {
+    var operators = ['+', '-', '*'];
+    var num1 = Math.floor(Math.random() * 99) + 1;
+    var num2 = Math.floor(Math.random() * 99) + 1;
+    var operator = operators[Math.floor(Math.random() * operators.length)];
+
+    return `${num1} ${operator} ${num2}`;
+}
+
+function evaluateExpression(expression) {
+    return Function('"use strict"; return (' + expression + ')')();
+}
+
+function generateRandomExpressions() {
+    var expr1 = generateRandomArithmeticExpression();
+    var expr2 = generateRandomArithmeticExpression();
+    
+    button1.textContent = expr1;
+    button2.textContent = expr2;
+}
+
+function checkAnswer(selectedButton) {
+    var button1Value = evaluateExpression(button1.textContent);
+    var button2Value = evaluateExpression(button2.textContent);
+
+    var userInteracted = true;  // User has interacted by clicking or pressing a key
+
+    // Check if both expressions are equal
+    if (button1Value === button2Value) {
+        generateRandomExpressions();
+        startTimer();
+        return;
+    }
+
+    var correctAnswer = button1Value > button2Value ? button1 : button2;
+
+    if (selectedButton === correctAnswer) {
+        currentScore++;
+        score.textContent = "Score: " + currentScore;
+
+        // Calculate response time
+        var currentTime = Date.now();
+        var responseTime = currentTime - startTime;
+        responseTimeArray.push(responseTime);
+
+        generateRandomExpressions();
+        startTimer();
+    } else {
+        gameOver();
+    }
+}
+
+function startTimer() {
+    clearTimeout(timerId);  // Clear any existing timer
+    clearInterval(progressIntervalId);  // Clear any existing progress bar animation
+
+    startTime = Date.now();
+    userInteracted = false;  // Reset user interaction flag
+
+    // Reset progress bar to full width
+    progressContainer.style.display = "block";
+    progressBar.style.width = '100%';
+    
+    // Gradually decrease the width of the progress bar over timeLimit milliseconds
+    let start = Date.now();
+    progressIntervalId = setInterval(function() {
+        let elapsed = Date.now() - start;
+        let remaining = timeLimit - elapsed;
+        let progressPercent = Math.max(0, (remaining / timeLimit) * 100);  // Prevent negative width
+        progressBar.style.width = progressPercent + '%';
+
+        // If time is up, stop the interval and call gameOver
+        if (elapsed >= timeLimit) {
+            clearInterval(progressIntervalId);
+        }
+    }, 10);  // Update the progress bar every 10 milliseconds
+
+    // Set timeout for game over when time runs out
+    timerId = setTimeout(function() {
+        if (!userInteracted) {
+            responseTimeArray.push(0);  // If no interaction, log 0ms as response time
+        }
+        gameOver();
+    }, timeLimit);
+}
+
+function gameOver() {
+    clearInterval(progressIntervalId);  // Clear progress bar animation
+
+    // Redirect to game over page with score and response times
+    var responseTimesString = responseTimeArray.join(',');
+    window.location.href = `gameover.html?score=${currentScore}&times=${responseTimesString}`;
+}
+
+function startCountdown() {
+    let count = 3;
+    let countdownInterval = setInterval(function() {
+        countdown.textContent = "Starting in: " + count;
+        count--;
+        if (count < 0) {
+            clearInterval(countdownInterval);
+            countdown.style.display = "none";
+            document.getElementById("buttons").style.display = "block";
+            generateRandomExpressions();
+            startTimer();
+        }
+    }, 1000);
+}
+
+// Event listeners for button clicks
+button1.addEventListener("click", function() {
+    checkAnswer(button1);
+});
+
+button2.addEventListener("click", function() {
+    checkAnswer(button2);
+});
+
+// Event listeners for keyboard keys (ArrowUp and ArrowDown)
+document.addEventListener("keydown", function(event) {
+    if (event.key === "ArrowUp") {
+        checkAnswer(button1);
+    } else if (event.key === "ArrowDown") {
+        checkAnswer(button2);
+    }
+});
+
+// Start the game after countdown
+startCountdown();
+</script>
+
+</body>
+</html>
